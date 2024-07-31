@@ -10,10 +10,15 @@ import React, {
 import styles from "@styles/quests.module.css";
 import Task from "./task";
 import Reward from "./reward";
-import quests_nft_abi from "@abi/quests_nft_abi.json";
 import { useAccount, useProvider } from "@starknet-react/core";
 import { hexToDecimal } from "@utils/feltService";
-import { NFTItem, QuestDocument, UserTask } from "types/backTypes";
+import {
+  NFTItem,
+  QuestDocument,
+  QuestParticipantsDocument,
+  UserTask,
+  CompletedQuests,
+} from "types/backTypes";
 import { Call, Contract } from "starknet";
 import { Skeleton } from "@mui/material";
 import TasksSkeleton from "@components/skeletons/tasksSkeleton";
@@ -28,6 +33,8 @@ import {
   getQuestParticipants,
   getTasksByQuestId,
 } from "@services/apiService";
+import Typography from "@components/UI/typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
 
 type QuestDetailsProps = {
   quest: QuestDocument;
@@ -64,8 +71,8 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
   const [showQuiz, setShowQuiz] = useState<ReactNode>();
   const [customError, setCustomError] = useState<string>("");
 
-  const questId = quest.id.toString();
-  const [participants, setParticipants] = useState({
+  const questId = quest?.id?.toString();
+  const [participants, setParticipants] = useState<QuestParticipantsDocument>({
     count: 0,
     firstParticipants: [] as string[],
   });
@@ -74,8 +81,8 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
   useEffect(() => {
     if (questId && questId !== "0" && starknetIdNavigator) {
       getQuestParticipants(questId).then(async (data) => {
-        setParticipants(data);
-        const addrs = data.firstParticipants;
+        setParticipants(data as QuestParticipantsDocument);
+        const addrs = (data as QuestParticipantsDocument).firstParticipants;
         const identities = addrs.map(async (addr: string) => {
           const domain = await starknetIdNavigator
             ?.getStarkName(addr)
@@ -88,9 +95,9 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
         });
         const identitiesResolved = await Promise.all(identities);
         setParticipants({
-          count: data.count,
+          count: (data as QuestParticipantsDocument).count,
           firstParticipants: identitiesResolved,
-        });
+        } as QuestParticipantsDocument);
       });
     }
   }, [questId, starknetIdNavigator]);
@@ -138,6 +145,7 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
       getEligibleRewards({
         rewardEndpoint: quest.rewards_endpoint,
         address: hexToDecimal(address),
+        quest_id: quest.id,
       }).then((data) => {
         if (data.rewards) {
           setEligibleRewards(splitByNftContract(data.rewards));
@@ -157,6 +165,7 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
       if (hasNftReward === false) return;
       let unclaimed: EligibleReward[] = [];
       for (const contractAddr in eligibleRewards) {
+        const { abi: quests_nft_abi } = await provider.getClassAt(contractAddr);
         const perContractRewards = eligibleRewards[contractAddr];
         const calldata = [];
         for (const reward of perContractRewards) {
@@ -167,26 +176,19 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
           });
         }
         const contract = new Contract(quests_nft_abi, contractAddr, provider);
-
         const response = await contract.call("get_tasks_status", [calldata]);
-        if (
-          typeof response === "object" &&
-          response !== null &&
-          !Array.isArray(response)
-        ) {
-          const status = (response as any)["status"];
+        if (response !== null && Array.isArray(response)) {
+          const result = response.map((x: any) => {
+            if (x === true) {
+              return 1;
+            }
+            return 0;
+          });
 
-          if (Array.isArray(status)) {
-            const result = status.map((x: any) => {
-              if (typeof x === "bigint") {
-                return Number(x);
-              }
-            });
-            const unclaimedPerContractRewards = perContractRewards.filter(
-              (_, index) => result[index] === 0
-            );
-            unclaimed = unclaimed.concat(unclaimedPerContractRewards);
-          }
+          const unclaimedPerContractRewards = perContractRewards.filter(
+            (_, index) => result[index] === 0
+          );
+          unclaimed = unclaimed.concat(unclaimedPerContractRewards);
         }
       }
       setUnclaimedRewards(unclaimed);
@@ -195,8 +197,8 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
 
   const checkUserRewards = async () => {
     if (!address) return;
-    const res = await getCompletedQuests(address);
-    if (res.includes(parseInt(questId))) {
+    const res = (await getCompletedQuests(address)) as CompletedQuests;
+    if (res?.includes(parseInt(questId))) {
       setRewardsEnabled(true);
     }
   };
@@ -229,10 +231,13 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
         ],
       });
     });
+
     if (to_claim?.length > 0) {
       setRewardsEnabled(true);
-    } else setRewardsEnabled(false);
-    setMintCalldata(calldata);
+      setMintCalldata(calldata);
+    } else {
+      setRewardsEnabled(false);
+    }
   }, [questId, unclaimedRewards, eligibleRewards]);
 
   useEffect(() => {
@@ -254,7 +259,7 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
         client_id: process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID as string,
         response_type: "code",
         scope: ["identify", "guilds"].join(" "),
-        state: hexToDecimal(address),
+        state: `${hexToDecimal(address)}+${task.quest_id}+${task.id}`,
       };
       const qs = new URLSearchParams(options).toString();
       return `${rootUrl}?${qs}`;
@@ -293,7 +298,7 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
   return (
     <>
       <NftImage
-        nfts={quest.rewards_nfts.map((nft: NFTItem) => {
+        nfts={quest?.rewards_nfts?.map((nft: NFTItem) => {
           return { imgSrc: nft.img, level: nft.level };
         })}
       />
@@ -306,7 +311,12 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
             sx={{ fontSize: "2rem", bgcolor: "grey.900" }}
           />
         ) : (
-          <h1 className="title extrabold mt-5 mw-90">{quest.name}</h1>
+          <Typography
+            type={TEXT_TYPE.H1}
+            className="title extrabold mt-5 mw-90"
+          >
+            {quest.name}
+          </Typography>
         )}
         {quest.desc === "loading" ? (
           <Skeleton
@@ -316,12 +326,20 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
           />
         ) : (
           <>
-            <p className="text-center max-w-[50vw]">{quest.desc}</p>
+            <Typography
+              type={TEXT_TYPE.BODY_DEFAULT}
+              className="text-center max-w-[50vw]"
+            >
+              {quest.desc}
+            </Typography>
             {quest?.additional_desc ? (
               <>
-                <p className="text-center max-w-[50vw]">
+                <Typography
+                  type={TEXT_TYPE.BODY_DEFAULT}
+                  className="text-center max-w-[50vw]"
+                >
                   {quest.additional_desc}
-                </p>
+                </Typography>
               </>
             ) : null}
           </>
@@ -336,7 +354,9 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
         ) : (
           <>
             <div className={styles.questStats}>
-              <p>{tasks.length} steps</p>
+              <Typography type={TEXT_TYPE.BODY_DEFAULT}>
+                {tasks.length} steps
+              </Typography>
               <div className="ml-auto flex">
                 <div className={styles.participantAvatars}>
                   {participants.firstParticipants.map((participant, index) => (
@@ -348,7 +368,9 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
                     />
                   ))}
                 </div>
-                <p>{participants.count || 0} participants</p>
+                <Typography type={TEXT_TYPE.BODY_DEFAULT}>
+                  {participants.count || 0} participants
+                </Typography>
               </div>
             </div>
             {tasks.map((task) => {
@@ -357,7 +379,7 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
                   key={task.id}
                   name={task.name}
                   customError={
-                    task.name.includes("Discord" || "discord")
+                    task.name?.includes("Discord" || "discord")
                       ? customError
                       : ""
                   }
@@ -368,7 +390,9 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
                   verifyEndpoint={
                     task.verify_endpoint_type &&
                     task.verify_endpoint_type.startsWith("default")
-                      ? `${task.verify_endpoint}?addr=${hexToDecimal(address)}`
+                      ? `${task.verify_endpoint}?addr=${hexToDecimal(
+                          address
+                        )}&quest_id=${quest.id}&task_id=${task.id}`
                       : task.verify_endpoint_type === "quiz"
                       ? task.verify_endpoint
                       : generateOAuthUrl(task)
@@ -382,18 +406,20 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
                       ? taskError.error
                       : ""
                   }
+                  expired={quest.expired}
                   setShowQuiz={setShowQuiz}
                   quizName={task.quiz_name || undefined}
                   issuer={{
                     name: quest.issuer,
                     logoFavicon: quest.logo,
                   }}
-                  hasRootDomain={hasRootDomain}
+                  hasRootDomain={quest.id === 127 ? true : hasRootDomain}
                   setShowDomainPopup={setShowDomainPopup}
                   checkUserRewards={checkUserRewards}
                 />
               );
             })}
+
             <Reward
               quest={quest}
               hasNftReward={hasNftReward}
@@ -402,7 +428,9 @@ const QuestDetails: FunctionComponent<QuestDetailsProps> = ({
               onClick={() => {
                 setRewardsEnabled(false);
               }}
-              disabled={!rewardsEnabled}
+              disabled={
+                !(tasks.every((task) => task.completed) && rewardsEnabled)
+              }
               mintCalldata={mintCalldata}
               claimed={rewardsEnabled && unclaimedRewards?.length === 0}
               questName={quest.name}

@@ -8,7 +8,7 @@ import Footer from "@components/UI/footer";
 export const metadata: Metadata = {
   title: "Starknet Quest",
   description:
-    "Starknet Quest help protocols attract and retain users by creating gamified quest experiences on Starknet.",
+    "Starknet Quest helps protocols attract and retain users by creating gamified quest experiences on Starknet.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_LINK as string),
   openGraph: {
     title: "Starknet Quest - Accomplish quests to get unique NFTs.",
@@ -54,7 +54,9 @@ export default function RootLayout({
       <body className="default_background_color">
         <Providers>
           <Navbar />
-          {children}
+          <main>
+            {children}
+          </main>
           <Footer />
         </Providers>
       </body>

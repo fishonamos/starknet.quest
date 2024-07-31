@@ -1,7 +1,13 @@
 import React, { FunctionComponent, useState } from "react";
 import { MutatingDots } from "react-loader-spinner";
+import Typography from "../typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
 
-const LoadingScreen: FunctionComponent = () => {
+interface LoadingScreenProps {
+  displayMessage?: boolean;
+}
+
+const LoadingScreen: FunctionComponent<LoadingScreenProps> = (props) => {
   const [loadingMessageNumber, setLoadingMessageNumber] = useState<number>(0);
   const loadingMessages: string[] = [
     "Patience is a virtue, especially when it comes to Starknet Alpha",
@@ -18,10 +24,12 @@ const LoadingScreen: FunctionComponent = () => {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="sm:text-5xl text-5xl mr-3 ml-3">
-        {loadingMessages[loadingMessageNumber]}
-      </h1>
-      <div className="m-5 flex justify-center">
+      {props.displayMessage && (
+        <Typography type={TEXT_TYPE.H1} className="mr-3 ml-3 text-5xl sm:text-5xl">
+          {loadingMessages[loadingMessageNumber]}
+        </Typography>
+      )}
+      <div className="flex justify-center m-5">
         <MutatingDots
           height="100"
           width="100"
@@ -32,6 +40,10 @@ const LoadingScreen: FunctionComponent = () => {
       </div>
     </div>
   );
+};
+
+LoadingScreen.defaultProps = {
+  displayMessage: true,
 };
 
 export default LoadingScreen;

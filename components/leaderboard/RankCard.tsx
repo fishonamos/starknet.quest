@@ -5,20 +5,18 @@ import Avatar from "@components/UI/avatar";
 import { decimalToHex } from "@utils/feltService";
 import { getDomainFromAddress } from "../../utils/domainService";
 import Divider from "@mui/material/Divider";
-import AchievementIcon from "@components/UI/iconsComponents/icons/achievementIcon";
 import { CDNImage } from "@components/cdn/image";
+import Rank1Icon from "@components/UI/iconsComponents/icons/rank1Icon";
+import Rank2Icon from "@components/UI/iconsComponents/icons/Rank2Icon";
+import Rank3Icon from "@components/UI/iconsComponents/icons/Rank3Icon";
+import Typography from "@components/UI/typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
 
 type RankCardProps = {
   name: string;
   experience: number;
   trophy: number;
   position: number;
-};
-
-const iconMap = {
-  1: "#E6CD84",
-  2: "#D8D8D8",
-  3: "#E2943B",
 };
 
 const RankCard: FunctionComponent<RankCardProps> = ({
@@ -44,12 +42,15 @@ const RankCard: FunctionComponent<RankCardProps> = ({
   }, [name]);
 
   return (
-    <div className={styles.rank_card_container}>
+    <div className={`${styles.rank_card_container} modified-cursor-pointer`}>
       <div className={styles.rank_card_badge}>
-        <AchievementIcon
-          width="32"
-          color={iconMap[position as keyof typeof iconMap]}
-        />
+        {position === 1 ? (
+          <Rank1Icon width="40" />
+        ) : position === 2 ? (
+          <Rank2Icon width="40" />
+        ) : (
+          <Rank3Icon width="40" />
+        )}
       </div>
 
       <div className={styles.rank_card_naming}>
@@ -67,8 +68,14 @@ const RankCard: FunctionComponent<RankCardProps> = ({
 
       <div className={styles.rank_card_numbers}>
         <div className={styles.rank_card_number_layout}>
-          <CDNImage src={"/icons/xpBadge.svg"} priority width={30} height={30} alt="xp badge" />
-          <p>{experience}</p>
+          <CDNImage
+            src={"/icons/xpBadge.svg"}
+            priority
+            width={30}
+            height={30}
+            alt="xp badge"
+          />
+          <Typography type={TEXT_TYPE.BODY_DEFAULT}>{experience}</Typography>
         </div>
         <div className={styles.rank_card_number_layout}>
           <CDNImage
@@ -78,7 +85,7 @@ const RankCard: FunctionComponent<RankCardProps> = ({
             height={30}
             alt="trophy icon"
           />
-          <p>{trophy}</p>
+          <Typography type={TEXT_TYPE.BODY_DEFAULT}>{trophy}</Typography>
         </div>
       </div>
     </div>

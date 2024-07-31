@@ -7,6 +7,9 @@ import styles from "@styles/quests.module.css";
 import { CDNImg } from "@components/cdn/image";
 import QuestCard from "./questCard";
 import BoostReward from "./boostReward";
+import QuestTag from "@components/UI/questTag";
+import Typography from "@components/UI/typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
 
 type QuestProps = {
   onClick: () => void;
@@ -29,14 +32,16 @@ const Quest: FunctionComponent<QuestProps> = ({
 }) => {
   const { completedQuestIds } = useContext(QuestsContext);
   const isCompleted = useMemo(
-    () => completedQuestIds.includes(id),
+    () => completedQuestIds?.includes(id),
     [id, completedQuestIds]
   );
 
   return (
     <QuestCard
+      id={id}
       imgSrc={imgSrc}
       title={title}
+      issuer={issuer}
       onClick={() => !expired && onClick()}
       disabled={expired}
     >
@@ -45,27 +50,45 @@ const Quest: FunctionComponent<QuestProps> = ({
           expired ? "opacity-40" : null
         }`}
       >
-        <p className="text-gray-400">{issuer.name}</p>
+        <Typography type={TEXT_TYPE.BODY_DEFAULT} className="text-gray-400">
+          {issuer.name}
+        </Typography>
       </div>
-      <div className="flex gap-2 mt-3">
-        <div className={styles.issuer}>
-          {isCompleted ? (
-            <>
-              <p className="text-white mr-2">Done</p>
-              <CheckIcon width="24" color="#6AFFAF" />
-            </>
-          ) : expired ? (
-            <>
-              <p className="text-white mr-2">Expired</p>
-              <UnavailableIcon width="24" color="#D32F2F" />
-            </>
-          ) : (
-            <>
-              <CDNImg width={20} src={issuer.logoFavicon} loading="lazy"/>
-              <p className="text-white ml-2">{reward}</p>
-            </>
-          )}
-        </div>
+      <div className="grid grid-cols-2 gap-2 mt-3 md:grid-cols-2 lg:grid-cols-2 justify-center md:justify-start">
+        {isCompleted ? (
+          <>
+            <QuestTag
+              label={"Done"}
+              icon={
+                <CheckIcon
+                  width="24"
+                  color="#6AFFAF"
+                  backgroundColor="#29282B"
+                />
+              }
+              backgroundColor="#29282B"
+            />
+          </>
+        ) : expired ? (
+          <>
+            <QuestTag
+              label={"Expired"}
+              icon={
+                <UnavailableIcon
+                  width="24"
+                  color="#D32F2F"
+                  backgroundColor="#29282B"
+                />
+              }
+              backgroundColor="#29282B"
+            />
+          </>
+        ) : (
+          <>
+            <QuestTag label={reward} icon={issuer.logoFavicon} />
+          </>
+        )}
+
         <BoostReward questId={id} />
       </div>
     </QuestCard>

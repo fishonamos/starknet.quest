@@ -10,7 +10,10 @@ import {
 } from "@services/apiService";
 import Quest from "@components/quests/quest";
 import { useRouter } from "next/navigation";
-import { QuestDocument } from "../../../types/backTypes";
+import {
+  QuestDocument,
+  QuestParticipantsDocument,
+} from "../../../types/backTypes";
 import Timer from "@components/quests/timer";
 import { useAccount } from "@starknet-react/core";
 import Button from "@components/UI/button";
@@ -20,7 +23,9 @@ import BackButton from "@components/UI/backButton";
 import useBoost from "@hooks/useBoost";
 import { getTokenName } from "@utils/tokenService";
 import BoostSkeleton from "@components/skeletons/boostSkeleton";
-import { TOKEN_DECIMAL_MAP } from "@constants/common";
+import ErrorScreen from "@components/UI/screens/errorScreen";
+import Typography from "@components/UI/typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
 
 type BoostQuestPageProps = {
   params: {
@@ -44,8 +49,10 @@ export default function Page({ params }: BoostQuestPageProps) {
       let total = 0;
       await Promise.all(
         questIds?.map(async (questID) => {
-          const res = await getQuestParticipants(questID);
-          if (res?.count) total += res?.count;
+          const res = (await getQuestParticipants(
+            questID
+          )) as QuestParticipantsDocument;
+          if (res?.count) total += res?.count as number;
         })
       );
       return total;
@@ -72,8 +79,16 @@ export default function Page({ params }: BoostQuestPageProps) {
     setLoading(true);
     const questsList = await getQuestsInBoost(boostId);
     const boostInfo = await getBoostById(boostId);
+
+    if (!boostInfo) {
+      setLoading(false);
+      return;
+    }
+
     const totalParticipants = await getTotalParticipants(boostInfo.quests);
-    setQuests(questsList);
+    if (questsList) {
+      setQuests(questsList);
+    }
     setBoost(boostInfo);
     setParticipants(totalParticipants);
     setLoading(false);
@@ -95,7 +110,7 @@ export default function Page({ params }: BoostQuestPageProps) {
 
   const handleButtonClick = useCallback(() => {
     if (!boost || !address) return;
-    if (!winnerList.includes(hexToDecimal(address)))
+    if (!winnerList?.includes(hexToDecimal(address)))
       updateBoostClaimStatus(address, boost?.id, true);
 
     router.push(`/quest-boost/claim/${boost?.id}`);
@@ -129,55 +144,77 @@ export default function Page({ params }: BoostQuestPageProps) {
         <BoostSkeleton />
       ) : (
         <>
-          <div className="flex flex-col">
-            <h1 className={styles.title}>{boost?.name}</h1>
-            {boost?.expiry && boost.expiry > Date.now() ? (
-              <Timer fixed={false} expiry={Number(boost?.expiry)} />
-            ) : null}
-          </div>
+          {boost ? (
+            <>
+              <div className="flex flex-col">
+                <Typography
+                  type={TEXT_TYPE.H1}
+                  color="transparent"
+                  className={styles.title}
+                >
+                  {boost?.name}
+                </Typography>
+                {boost?.expiry && boost.expiry > Date.now() ? (
+                  <Timer fixed={false} expiry={Number(boost?.expiry)} />
+                ) : null}
+              </div>
 
-          <div className={styles.card_container}>
-            {quests?.map((quest, index) => {
-              if (quest?.hidden || quest?.disabled) return null;
-              return (
-                <Quest
-                  key={index}
-                  title={quest.title_card}
-                  onClick={() => router.push(`/quest/${quest.id}`)}
-                  imgSrc={quest.img_card}
-                  issuer={{
-                    name: quest.issuer,
-                    logoFavicon: quest.logo,
-                  }}
-                  reward={quest.rewards_title}
-                  id={quest.id}
-                  expired={quest.expired}
-                />
-              );
-            })}
-          </div>
-          <div className={styles.claim_button_container}>
-            <div className={styles.claim_button_text_content}>
-              <p>Reward:</p>
-              <div className={questStyles.issuer}>
-                <p>
-                  {boost?.amount} {getTokenName(boost?.token ?? "")}
-                </p>
-                <TokenSymbol tokenAddress={boost?.token ?? ""} />
+              <div className={styles.card_container}>
+                {quests?.map((quest, index) => {
+                  if (quest?.disabled) return null;
+                  return (
+                    <Quest
+                      key={index}
+                      title={quest.title_card}
+                      onClick={() => router.push(`/quest/${quest.id}`)}
+                      imgSrc={quest.img_card}
+                      issuer={{
+                        name: quest.issuer,
+                        logoFavicon: quest.logo,
+                      }}
+                      reward={quest.rewards_title}
+                      id={quest.id}
+                      expired={quest.expired}
+                    />
+                  );
+                })}
               </div>
-              <p>among</p>
-              <p className={styles.claim_button_text_highlight}>
-                {participants} players
-              </p>
-            </div>
-            {address ? (
-              <div>
-                <Button disabled={buttonDisabled} onClick={handleButtonClick}>
-                  {getButtonText()}
-                </Button>
+              <div className={styles.claim_button_container}>
+                <div className={styles.claim_button_text_content}>
+                  <Typography type={TEXT_TYPE.BODY_DEFAULT}>Reward:</Typography>
+                  <div className={questStyles.issuer}>
+                    <Typography type={TEXT_TYPE.BODY_DEFAULT}>
+                      {boost?.amount} {getTokenName(boost?.token ?? "")}
+                    </Typography>
+                    <TokenSymbol tokenAddress={boost?.token ?? ""} />
+                  </div>
+                  <Typography type={TEXT_TYPE.BODY_DEFAULT}>among</Typography>
+                  <Typography
+                    type={TEXT_TYPE.BODY_NORMAL}
+                    className={styles.claim_button_text_highlight}
+                  >
+                    {participants} players
+                  </Typography>
+                </div>
+                {address ? (
+                  <div>
+                    <Button
+                      disabled={buttonDisabled}
+                      onClick={handleButtonClick}
+                    >
+                      {getButtonText()}
+                    </Button>
+                  </div>
+                ) : null}
               </div>
-            ) : null}
-          </div>
+            </>
+          ) : (
+            <ErrorScreen
+              errorMessage="This boost doesn't exist !"
+              buttonText="Go back to boosts"
+              onClick={() => router.push("/quest-boost")}
+            />
+          )}
         </>
       )}
     </div>

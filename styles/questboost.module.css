@@ -6,11 +6,11 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  color: transparent;
 }
 
 .container {
   padding: 12vh 1.5rem;
+  width: 100%;
 }
 
 .boost_card_container {
@@ -50,7 +50,6 @@
 
 .card_title {
   font-size: 1.2rem;
-  color: var(--secondary);
   font-family: "Sora-Bold";
   margin: 0;
   text-align: left;
@@ -265,7 +264,11 @@
   padding: 16px;
   border-radius: 12px;
   gap: 13px;
-  background: linear-gradient(90deg, var(--primary) -0.12%, var(--tertiary) 99.88%);
+  background: linear-gradient(
+    90deg,
+    var(--primary) -0.12%,
+    var(--tertiary) 99.88%
+  );
   padding: 1px;
   position: absolute;
   bottom: 0px;
@@ -307,7 +310,7 @@
 }
 
 .card_container:has(.noBoosts) {
-  min-height: fit-content;
+  min-height: 430px;
 }
 
 .noBoosts {

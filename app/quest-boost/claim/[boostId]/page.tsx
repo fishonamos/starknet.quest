@@ -22,6 +22,9 @@ import useBoost from "@hooks/useBoost";
 import { useRouter } from "next/navigation";
 import ModalMessage from "@components/UI/modalMessage";
 import verifiedLottie from "@public/visuals/verifiedLottie.json";
+import { PendingBoostClaim } from "types/backTypes";
+import Typography from "@components/UI/typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
 
 type BoostQuestPageProps = {
   params: {
@@ -55,7 +58,7 @@ export default function Page({ params }: BoostQuestPageProps) {
       if (pendingClaimStatus) {
         setIsUnclaimed(
           pendingClaimStatus.filter(
-            (claim: Boost) => claim.id === parseInt(boostId)
+            (claim: PendingBoostClaim) => claim.id === parseInt(boostId)
           ).length > 0
         );
       }
@@ -83,7 +86,10 @@ export default function Page({ params }: BoostQuestPageProps) {
     let formattedSign: Signature = ["", ""];
     try {
       if (!boost?.id || !address) return formattedSign;
-      const res = await getQuestBoostClaimParams(boost.id, address);
+      const res = await getQuestBoostClaimParams(boost?.id, address);
+      if (!res) {
+        return ["", ""];
+      }
       formattedSign = [res?.r, res?.s];
       return formattedSign;
     } catch (err) {
@@ -98,7 +104,7 @@ export default function Page({ params }: BoostQuestPageProps) {
     if (!boost.winner) return false;
 
     setDisplayAmount(parseInt(String(boost?.amount / boost?.num_of_winners)));
-    return winnerList.includes(hexToDecimal(address));
+    return winnerList?.includes(hexToDecimal(address));
   }, [boost, address, winnerList]);
 
   const handleClaimClick = async () => {
@@ -188,9 +194,12 @@ export default function Page({ params }: BoostQuestPageProps) {
                     )}
                   </div>
                   <div className={styles.claim_button_text}>
-                    <p className={styles.claim_amount}>
+                    <Typography
+                      type={TEXT_TYPE.BODY_NORMAL}
+                      className={styles.claim_amount}
+                    >
                       {boost ? displayAmount : 0}
-                    </p>
+                    </Typography>
                   </div>
                   <div className={styles.token_symbol_container}>
                     <div className="bg-[#1F1F25] flex-1 rounded-[12px] flex justify-center items-center">
@@ -209,12 +218,13 @@ export default function Page({ params }: BoostQuestPageProps) {
                     />
                   </div>
                   <div className={styles.claim_button_text}>
-                    <p
+                    <Typography
+                      type={TEXT_TYPE.BODY_DEFAULT}
                       className="pb-[1.5rem] text-center"
                       style={{ fontSize: 24 }}
                     >
                       Sorry, no win this time.
-                    </p>
+                    </Typography>
                   </div>
                 </>
               )}

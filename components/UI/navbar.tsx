@@ -25,6 +25,10 @@ import { getCurrentNetwork } from "@utils/network";
 import { availableConnectors } from "@app/provider";
 import { useStarknetkitConnectModal } from "starknetkit";
 import Image from "next/image";
+import { PendingBoostClaim } from "types/backTypes";
+import Typography from "./typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
+import Hamburger from "./hamburger";
 
 const Navbar: FunctionComponent = () => {
   const currentNetwork = getCurrentNetwork();
@@ -35,9 +39,6 @@ const Navbar: FunctionComponent = () => {
   const { connectAsync } = useConnect();
   const { disconnect } = useDisconnect();
   const domainOrAddressMinified = useDisplayName(address ?? "");
-  const domain = useDomainFromAddress(address ?? "").domain;
-  const addressOrDomain =
-    domain && domain.endsWith(".stark") ? domain : address;
   const network = currentNetwork === "TESTNET" ? "testnet" : "mainnet";
   const [navbarBg, setNavbarBg] = useState<boolean>(false);
   const [showWallet, setShowWallet] = useState<boolean>(false);
@@ -62,9 +63,9 @@ const Navbar: FunctionComponent = () => {
   const fetchAndUpdateNotifications = async () => {
     if (!address) return;
     const res = await getPendingBoostClaims(hexToDecimal(address));
-    if (!(res?.length > 0)) return;
+    if (!res) return;
     const finalNotificationsList: SQInfoData[] = [];
-    res.forEach((boost: Boost) => {
+    res.forEach((boost: PendingBoostClaim) => {
       const data = {
         title: "Congratulations! 🎉",
         subtext: `You have just won ${parseInt(
@@ -110,7 +111,7 @@ const Navbar: FunctionComponent = () => {
     if (!isConnected || !account) return;
     account.getChainId().then((chainId) => {
       const isWrongNetwork =
-        (chainId === constants.StarknetChainId.SN_GOERLI &&
+        (chainId === constants.StarknetChainId.SN_SEPOLIA &&
           network === "mainnet") ||
         (chainId === constants.StarknetChainId.SN_MAIN &&
           network === "testnet");
@@ -195,23 +196,20 @@ const Navbar: FunctionComponent = () => {
             </Link>
           </div>
           <div>
-            <ul className="hidden lg:flex uppercase items-center">
+            <ul className="hidden lg:flex uppercase items-center ">
               <Link href="/">
                 <li className={styles.menuItem}>Quests</li>
               </Link>
-              <Link href="/achievements">
-                <li className={styles.menuItem}>Achievements</li>
+              <Link href={`/discover/defi`}>
+                <li className={styles.menuItem}>Earn</li>
               </Link>
-              <Link href="/leaderboard">
-                <li className={styles.menuItem}>Leaderboard</li>
-              </Link>
+              {isConnected && (
+                <Link href={`/${address}`}>
+                  <li className={styles.menuItem}>Dashboard</li>
+                </Link>
+              )}
               {address ? (
                 <>
-                  <Link
-                    href={`/${address ? addressOrDomain : "not-connected"}`}
-                  >
-                    <li className={styles.menuItem}>My land</li>
-                  </Link>
                   <li
                     className={styles.menuItem}
                     onClick={openNotificationModal}
@@ -240,12 +238,8 @@ const Navbar: FunctionComponent = () => {
                 disconnectByClick={disconnectByClick}
               />
             </ul>
-            <div onClick={handleNav} className="lg:hidden">
-              <AiOutlineMenu
-                color={theme.palette.secondary.main}
-                size={25}
-                className="mr-3"
-              />
+            <div className="lg:hidden">
+              <Hamburger active={nav} onClick={handleNav} />
             </div>
           </div>
         </div>
@@ -253,40 +247,17 @@ const Navbar: FunctionComponent = () => {
         <div
           className={
             nav
-              ? "lg:hidden fixed left-0 top-0 w-full h-screen bg-black/10 z-10"
+              ? "mt-24 lg:hidden fixed left-0 top-0 w-full h-screen bg-black/10 z-10" //extra margin so page doesnt cover forst navbar buttons
               : ""
           }
         >
           <div
-            className={`fixed left-0 top-0 w-full sm:w-[60%] lg:w-[45%] h-screen bg-background px-5 ease-in justify-between flex-col overflow-auto ${
+            className={`mt-20 fixed left-0 top-0 w-full sm:w-[60%] lg:w-[45%] h-screen bg-background px-5 ease-in justify-between flex-col overflow-auto ${
+              //extra margin so page doesnt overlap the navbar
               nav ? styles.mobileNavbarShown : styles.mobileNavbarHidden
             }`}
           >
             <div className="h-full flex flex-col">
-              <div className={styles.mobileNavBarHeader}>
-                <div>
-                  <Link href="/">
-                    <Image
-                      src="/visuals/starknetquestLogo.svg"
-                      alt="Starknet Quest Logo"
-                      width={70}
-                      height={70}
-                      className={styles.logo}
-                      priority
-                    />
-                  </Link>
-                </div>
-
-                <div
-                  onClick={handleNav}
-                  className="rounded-lg modified-cursor-pointer p-1"
-                >
-                  <CloseFilledIcon
-                    width="32"
-                    color={theme.palette.background.default}
-                  />
-                </div>
-              </div>
               <div className="py-4 my-auto text-center font-extrabold">
                 <ul className="uppercase text-babe-blue">
                   <Link href="/">
@@ -297,34 +268,24 @@ const Navbar: FunctionComponent = () => {
                       Quests
                     </li>
                   </Link>
-                  <Link href="/achievements">
+                  <Link href="/discover/defi">
                     <li
                       onClick={() => setNav(false)}
                       className={styles.menuItemSmall}
                     >
-                      Achievements
+                      Earn
                     </li>
                   </Link>
-                  {address ? (
-                    <Link
-                      href={`/${address ? addressOrDomain : "not-connected"}`}
-                    >
+                  {isConnected && (
+                    <Link href={`/${address}`}>
                       <li
                         onClick={() => setNav(false)}
                         className={styles.menuItemSmall}
                       >
-                        My land
+                        Dashboard
                       </li>
                     </Link>
-                  ) : null}
-                  <Link href="/leaderboard">
-                    <li
-                      onClick={() => setNav(false)}
-                      className={styles.menuItemSmall}
-                    >
-                      Leaderboard
-                    </li>
-                  </Link>
+                  )}
                 </ul>
               </div>
             </div>
@@ -362,10 +323,10 @@ const Navbar: FunctionComponent = () => {
         closeModal={() => setIsWrongNetwork(false)}
         message={
           <div className="mt-3 flex flex-col items-center justify-center text-center">
-            <p>
+            <Typography type={TEXT_TYPE.BODY_DEFAULT}>
               This app only supports Starknet {network}, you have to change your
               network to be able use it.
-            </p>
+            </Typography>
             <div className="mt-3">
               <Button onClick={() => disconnectByClick()}>
                 {`Disconnect`}

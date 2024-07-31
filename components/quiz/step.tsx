@@ -1,11 +1,13 @@
 import React, { FunctionComponent, useEffect, useState } from "react";
 import QuizControls from "./quizControls";
-import ProgressBar from "./progressBar";
 import QuestionRouter from "./questionRouter";
 import styles from "@styles/components/quests/quiz.module.css";
 import CheckMarkIcon from "@components/UI/iconsComponents/icons/checkMarkIcon";
 import NftIssuer from "@components/quests/nftIssuer";
 import { CDNImg } from "@components/cdn/image";
+import Typography from "@components/UI/typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
+import ProgressBar from "@components/UI/progressBar";
 
 type StepProps = {
   setStep: (s: number) => void;
@@ -75,7 +77,7 @@ const Step: FunctionComponent<StepProps> = ({
 
   return (
     <>
-      <ProgressBar currentStep={step} totalSteps={questions.length} />
+      <ProgressBar doneSteps={step - 1} totalSteps={questions.length} />
       {question ? (
         <section className={styles.contentContainer}>
           {layoutElements}
@@ -83,7 +85,9 @@ const Step: FunctionComponent<StepProps> = ({
             <div className={styles.issuer}>
               <NftIssuer issuer={issuer} />
             </div>
-            <h1 className={styles.questionTitle}>{question.question}</h1>
+            <Typography type={TEXT_TYPE.H1} className={styles.questionTitle}>
+              {question.question}
+            </Typography>
             <QuestionRouter
               setSelected={setSelected}
               setSelectedOptions={setSelectedOptions}

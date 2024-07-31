@@ -7,10 +7,12 @@ import {
   ErrorRounded as ErrorRoundedIcon,
 } from "@mui/icons-material";
 import Button from "@components/UI/button";
-import { CircularProgress } from "@mui/material";
+import { CircularProgress, useMediaQuery } from "@mui/material";
 import { useAccount } from "@starknet-react/core";
 import Quiz from "@components/quiz/quiz";
 import ArrowRightIcon from "@components/UI/iconsComponents/icons/arrowRightIcon";
+import Typography from "@components/UI/typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
 
 const Task: FunctionComponent<Task> = ({
   name,
@@ -19,7 +21,6 @@ const Task: FunctionComponent<Task> = ({
   cta = "open app",
   verifyEndpoint,
   verifyRedirect,
-  refreshRewards,
   wasVerified,
   verifyEndpointType,
   hasError,
@@ -30,7 +31,7 @@ const Task: FunctionComponent<Task> = ({
   setShowDomainPopup,
   hasRootDomain,
   customError,
-  checkUserRewards,
+  expired,
 }) => {
   const [isClicked, setIsClicked] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -39,6 +40,7 @@ const Task: FunctionComponent<Task> = ({
     customError.length > 0 ? customError : ""
   );
   const { address } = useAccount();
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
     if (hasError) {
@@ -64,6 +66,11 @@ const Task: FunctionComponent<Task> = ({
       setIsLoading(false);
     } else {
       try {
+        if (expired) {
+          setError("This quest has expired");
+          setIsLoading(false);
+          return;
+        }
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_LINK}/${verifyEndpoint}`
         );
@@ -82,16 +89,12 @@ const Task: FunctionComponent<Task> = ({
           await new Promise((resolve) =>
             setTimeout(() => {
               setIsVerified(true);
-              checkUserRewards();
-              refreshRewards();
               setIsLoading(false);
               resolve(null);
             }, timeout)
           );
         } else {
           setIsVerified(true);
-          checkUserRewards();
-          refreshRewards();
           setIsLoading(false);
         }
       } catch (error) {
@@ -119,7 +122,6 @@ const Task: FunctionComponent<Task> = ({
   useEffect(() => {
     if (!wasVerified) return;
     setIsVerified(wasVerified);
-    checkUserRewards();
   }, [wasVerified]);
 
   const openTask = () => {
@@ -128,18 +130,17 @@ const Task: FunctionComponent<Task> = ({
       return setShowQuiz(
         <Quiz
           setShowQuiz={setShowQuiz}
-          quizId={quizName as string}
+          quizId={quizName ? quizName : 0}
           issuer={issuer}
           verifyEndpoint={verifyEndpoint}
           setIsVerified={setIsVerified}
-          refreshRewards={refreshRewards}
         />
       );
     window.open(href);
   };
 
   const getButtonName = () => {
-    if (verifyEndpointType === "quiz") return "Start quiz";
+    if (verifyEndpointType === "quiz") return isMobile ? "Quiz" : "Start quiz";
     return "Verify";
   };
 
@@ -153,7 +154,9 @@ const Task: FunctionComponent<Task> = ({
           <div className={isClicked ? "rotate-90" : undefined}>
             <ArrowRightIcon width={"16"} color="white" />
           </div>
-          <p className="ml-2 mr-2">{name}</p>
+          <Typography type={TEXT_TYPE.BODY_DEFAULT} className="ml-2 mr-2">
+            {name}
+          </Typography>
         </div>
         {isVerified ? (
           <div className="flex">
@@ -183,7 +186,9 @@ const Task: FunctionComponent<Task> = ({
             }}
             className={styles.verifyButton}
           >
-            <p>{getButtonName()}</p>
+            <Typography type={TEXT_TYPE.BODY_DEFAULT}>
+              {getButtonName()}
+            </Typography>
           </div>
         )}
       </div>
@@ -192,7 +197,9 @@ const Task: FunctionComponent<Task> = ({
           isClicked ? styles.visible : null
         }`}
       >
-        <p className="mb-3">{description}</p>
+        <Typography type={TEXT_TYPE.BODY_DEFAULT} className="mb-3">
+          {description}
+        </Typography>
         <div className="flex w-full justify-center items-center">
           <div className="w-2/3">
             <Button onClick={() => window.open(href)}>{cta}</Button>

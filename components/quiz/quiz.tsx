@@ -16,10 +16,10 @@ import { getQuizById } from "@services/apiService";
 type QuizProps = {
   setShowQuiz: (menu: ReactNode) => void;
   setIsVerified: (isVerified: boolean) => void;
-  quizId: string;
+  quizId: number;
   issuer: Issuer;
   verifyEndpoint: string;
-  refreshRewards: () => void;
+  refreshRewards?: () => void;
 };
 
 const Quiz: FunctionComponent<QuizProps> = ({
@@ -28,13 +28,12 @@ const Quiz: FunctionComponent<QuizProps> = ({
   quizId,
   issuer,
   verifyEndpoint,
-  refreshRewards,
 }) => {
   const { address } = useAccount();
   const [step, setStep] = useState<number>(-1);
   const [quiz, setQuiz] = useState<Quiz>({
     name: "",
-    description: "",
+    desc: "",
     questions: [],
   });
   const [loading, setLoading] = useState<boolean>(true);
@@ -60,22 +59,19 @@ const Quiz: FunctionComponent<QuizProps> = ({
 
   useEffect(() => {
     setIsVerified(passed === true);
-    refreshRewards();
   }, [passed]);
 
   useEffect(() => {
     if (restart) return setRestart(false);
     setLoading(true);
-    getQuizById(quizId).then((data) => {
-      const quizObj: Quiz = {
-        name: data.name,
-        description: data.desc,
-        questions: data.questions,
-      };
-      setAnswers([]);
-      setQuiz(quizObj);
-      setStep(-1);
+    getQuizById(quizId).then((quiz) => {
       setLoading(false);
+      if (!quiz) {
+        return;
+      }
+      setAnswers([]);
+      setQuiz(quiz);
+      setStep(-1);
     });
   }, [quizId, restart]);
 
@@ -95,7 +91,7 @@ const Quiz: FunctionComponent<QuizProps> = ({
         },
         body: JSON.stringify({
           user_answers_list: answers.map((answer) =>
-            answer.map((value) => value.toString())
+            answer.map((value) => Number(value))
           ),
           quiz_name: quizId,
           addr: hexToDecimal(address),
@@ -115,7 +111,7 @@ const Quiz: FunctionComponent<QuizProps> = ({
         <StartScreen
           setStep={setStep}
           name={quiz.name}
-          description={quiz.description}
+          description={quiz.desc}
           step={step}
         />
       ) : step === quiz?.questions.length ? (

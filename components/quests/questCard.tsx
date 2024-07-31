@@ -1,9 +1,13 @@
 import React, { FunctionComponent } from "react";
 import styles from "@styles/components/quests/card.module.css";
 import cdnize from "@utils/cdnize";
+import Typography from "@components/UI/typography/typography";
+import { TEXT_TYPE } from "@constants/typography";
 type QuestCardProps = {
+  id: number;
   children: React.ReactNode;
   imgSrc: string;
+  issuer?: Issuer;
   title: string;
   onClick: () => void;
   disabled?: boolean;
@@ -23,7 +27,7 @@ const QuestCard: FunctionComponent<QuestCardProps> = ({
         className={styles.cardImage}
       />
       <div className={styles.cardInfos}>
-        <h3 className={styles.cardTitle}>{title}</h3>
+        <Typography type={TEXT_TYPE.H3} color="secondary" className={styles.cardTitle}>{title}</Typography>
         {children}
       </div>
     </div>

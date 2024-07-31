@@ -1,4 +1,9 @@
-type IconProps = { width: string; color?: string; secondColor?: string };
+type IconProps = {
+  width: string;
+  color?: string;
+  secondColor?: string;
+  backgroundColor?: string;
+};
 
 type Issuer = {
   name: string;
@@ -18,17 +23,18 @@ type Task = {
   verifyEndpoint: string;
   verifyRedirect: string | null;
   verifyEndpointType: string;
-  refreshRewards: () => void;
+  refreshRewards?: () => void;
   setShowQuiz: (s: ReactNode) => void;
   wasVerified?: boolean;
   hasError?: boolean;
   verifyError?: string;
-  quizName?: string;
+  quizName?: number;
   issuer?: Issuer;
   setShowDomainPopup: (show: boolean) => void;
   hasRootDomain: boolean;
   customError: string;
-  checkUserRewards: () => void;
+  checkUserRewards?: () => void;
+  expired: boolean;
 };
 
 type TaskProps = Task & { id: number };
@@ -41,7 +47,7 @@ type TaskError = {
 
 type Quiz = {
   name: string;
-  description: string;
+  desc: string;
   questions: QuizQuestion[];
 };
 
@@ -65,11 +71,12 @@ type Boost = {
   token: string;
   expiry: number;
   quests: number[];
-  claimed: boolean;
+  claimed?: boolean;
   winner: string[] | null;
   img_url: string;
   id: number;
   name: string;
+  hidden: boolean;
   num_of_winners: number;
   token_decimals: number;
 };
@@ -81,19 +88,29 @@ type Reward = {
   disabled: boolean;
 };
 
+type VerifierData = {
+  verifier: string;
+  field: string;
+  data: string;
+};
 type Identity = {
-  addr: string;
-  domain?: string;
-  domain_expiry?: number | null;
-  is_owner_main?: boolean;
-  owner_addr?: string;
-  old_discord?: string;
-  old_twitter?: string;
-  old_github?: string;
-  discord?: string;
-  twitter?: string;
-  github?: string;
-  starknet_id?: string;
+  id: string;
+  domain: {
+    domain: string;
+    migrated?: boolean;
+    root?: boolean;
+    creation_date?: number;
+    expiry?: number;
+    resolver?: string | null;
+    legacy_address?: string;
+    rev_address?: string;
+  };
+  creation_date?: number;
+  main: boolean;
+  owner: string;
+  user_data?: [];
+  extended_verifier_data?: [];
+  verifier_data?: VerifierData[];
   error?: string;
 };
 
@@ -157,12 +174,11 @@ type CornerStyle = "bottomRight" | "bottomLeft" | "topRight" | "topLeft";
 type SquareStyle = "bottomRight" | "bottomLeft" | "topRight" | "topLeft";
 
 type ProfileCard = {
-  title: string;
   identity: Identity;
-  addressOrDomain: string | string[] | undefined;
-  sinceDate: string | null;
-  achievements: BuildingsInfo[];
-  soloBuildings: StarkscanNftProps[];
+  addressOrDomain: string | undefined;
+  rankingData?: RankingData;
+  leaderboardData?: LeaderboardToppersData;
+  isOwner?: boolean;
 };
 
 type Signature = [string, string];
@@ -196,7 +212,7 @@ type BuildingsInfo = {
 
 type QuestCategory = {
   name: string;
-  img: string;
+  img: string | undefined;
   questNumber: number;
   quests: QuestDocument[];
 };
@@ -247,18 +263,16 @@ type RankingProps = {
     first_elt_position: number;
     ranking: { address: string; xp: number; achievements: number }[];
   };
+  duration: string;
+  leaderboardToppers: LeaderboardToppersData;
   paginationLoading: boolean;
   setPaginationLoading: (_: boolean) => void;
   selectedAddress: string;
+  searchedAddress: string;
 };
 
 type ControlsDashboardProps = {
-  ranking: RankingData;
-  handlePagination: (_: string) => void;
-  rowsPerPage: number;
   setRowsPerPage: (_: number) => void;
-  leaderboardToppers: LeaderboardToppersData;
-  duration: string;
   setCustomResult: (_: boolean) => void;
 };
 
@@ -272,3 +286,52 @@ type LeaderboardToppersData = {
   total_users: number;
   position?: number;
 };
+
+type PickRandomObjects = {
+  questArray: QuestDocument[];
+  count?: number;
+};
+
+type TabPanelProps = {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+};
+
+type TableInfo = {
+  title: string;
+  action: string;
+  apr: number;
+  volume: number;
+  daily_rewards: number;
+  app: string;
+};
+// Define discriminated union types
+type StepMap =
+  | { type: "Quiz"; data: QuizInputType }
+  | { type: "TwitterFw"; data: TwitterFwInputType }
+  | { type: "TwitterRw"; data: TwitterRwInputType }
+  | { type: "Discord"; data: DiscordInputType }
+  | { type: "Custom"; data: CustomInputType }
+  | { type: "None"; data: object }
+  | { type: "Domain"; data: DomainInputType }
+  | { type: "Balance"; data: BalanceInputType };
+
+type CustomInputType = typeof CustomInput;
+type DiscordInputType = typeof DiscordInput;
+type DomainInputType = typeof DomainInput;
+type QuizInputType = typeof QuizDefaultInput;
+type TwitterFwInputType = typeof TwitterFwInput;
+type TwitterRwInputType = typeof TwitterRwInput;
+type BalanceInputType = typeof BalanceInput;
+type TaskType =
+  | "Quiz"
+  | "TwitterFw"
+  | "Discord"
+  | "Custom"
+  | "TwitterRw"
+  | "Domain"
+  | "Balance"
+  | "None";
+
+type networks = "MAINNET" | "TESTNET";

@@ -1,7 +1,12 @@
 "use client";
 
-import { ReactNode, createContext, useMemo, useState } from "react";
-import { QueryError, QuestDocument } from "../types/backTypes";
+import React, { ReactNode, createContext, useMemo, useState } from "react";
+import {
+  BoostedQuests,
+  QueryError,
+  QuestDocument,
+  CompletedQuests,
+} from "../types/backTypes";
 import { useAccount } from "@starknet-react/core";
 import { hexToDecimal } from "@utils/feltService";
 import { fetchQuestCategoryData } from "@services/apiService";
@@ -22,12 +27,6 @@ interface QuestsConfig {
   completedBoostIds: number[];
   boostedQuests: number[];
 }
-
-type GetQuestsRes =
-  | {
-      [key: string]: QuestDocument[];
-    }
-  | QueryError;
 
 export const QuestsContext = createContext<QuestsConfig>({
   quests: [],
@@ -57,7 +56,9 @@ export const QuestsContextProvider = ({
 
   useMemo(() => {
     (async () => {
-      const data: GetQuestsRes = await getQuests();
+      const data = await getQuests();
+
+      if (!data) return;
 
       const q = Object.values(data).flat();
 
@@ -67,6 +68,7 @@ export const QuestsContextProvider = ({
             try {
               // If a category img is defined in quest_categories use it
               const questData = await fetchQuestCategoryData(key);
+              if (!questData || !questData.img_url) return;
               return questData.img_url;
             } catch (error) {
               // else use img from first quest in the category
@@ -95,7 +97,7 @@ export const QuestsContextProvider = ({
   useMemo(() => {
     getTrendingQuests(hexToDecimal(address)).then(
       (data: QuestDocument[] | QueryError) => {
-        if ((data as QueryError).error) return;
+        if (!data || (data as QueryError).error) return;
         const quests = data as QuestDocument[];
         setTrendingQuests(quests);
         const notExpired = quests.filter((quest) => !quest.expired);
@@ -126,18 +128,16 @@ export const QuestsContextProvider = ({
 
   useMemo(() => {
     if (!address) return;
-    getCompletedQuests(hexToDecimal(address)).then(
-      (data: number[] | QueryError) => {
-        if ((data as QueryError).error) return;
-        setCompletedQuestIds(data as number[]);
-      }
-    );
+    getCompletedQuests(hexToDecimal(address)).then((data) => {
+      if (!data) return;
+      setCompletedQuestIds(data as CompletedQuests);
+    });
   }, [address]);
 
   useMemo(() => {
-    getBoostedQuests().then((data: number[] | QueryError) => {
+    getBoostedQuests().then((data: BoostedQuests | QueryError | undefined) => {
       if ((data as QueryError).error) return;
-      setBoostedQuests(data as number[]);
+      setBoostedQuests(data as BoostedQuests);
     });
   }, []);
 

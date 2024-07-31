@@ -31,12 +31,12 @@ Starknet Quest helps protocols attract and retain users by creating gamified que
 #### Land
 
 * Your land is the visual representation of your on-chain reputation which grows in size as you complete more quests and achievements on the platform.
-* You can visit this to check your overall progress on the starknet quest platfrom and expand it by completing any new quests or achievements.
+* You can visit this to check your overall progress on the starknet quest platform and expand it by completing any new quests or achievements.
 
 
 ## How to get started
 
-Clone the repository
+Fork the repository and clone the forked repository to your local system 
 ```bash
 git clone https://github.com/starknet-id/starknet.quest.git
 ```
